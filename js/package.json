@@ -1,0 +1,16 @@
+{
+  "name": "sudoku-generator",
+  "version": "1.0.0",
+  "description": "port of David Bau's python implementation",
+  "main": "generator.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "lodash.map": "^4.6.0",
+    "lodash.range": "^3.2.0",
+    "mocha": "^10.2.0"
+  }
+}

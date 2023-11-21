@@ -4,13 +4,13 @@
 // This is a port of David Bau's python  implementation:
 // http://davidbau.com/archives/2006/09/04/sudoku_generator.html
 
-var undefined;
-var _ = require('lodash');
+var map = require('lodash.map');
+var range = require('lodash.range');
 
 function makepuzzle(board) {
   var puzzle = [];
   var deduced = makeArray(81, null);
-  var order = _.range(81);
+  var order = range(81);
 
   shuffleArray(order);
 
@@ -39,6 +39,11 @@ function makepuzzle(board) {
   return boardforentries(puzzle);
 }
 
+function removeElement(array, from, to) {
+  var rest = array.slice((to || from) + 1 || array.length);
+  array.length = from < 0 ? array.length + from : from;
+  return array.push(...rest);
+};
 
 function checkpuzzle(puzzle, board) {
   if (board == undefined) {
@@ -124,7 +129,7 @@ function deduce(board) {
           stuck = false;
         }
         else if (stuck == true) {
-          var t = _.map(numbers, function (val, key) {
+          var t = map(numbers, function (val, key) {
             return { pos: pos, num: val };
           });
 
@@ -166,7 +171,7 @@ function deduce(board) {
             stuck = false;
           }
           else if (stuck) {
-            var t = _.map(spots, function (val, key) {
+            var t = map(spots, function (val, key) {
               return { pos: val, num: n };
             });
 
@@ -190,7 +195,7 @@ function deduce(board) {
 
 function figurebits(board) {
   var needed = [];
-  var allowed = _.map(board, function (val, key) {
+  var allowed = map(board, function (val, key) {
     return val == null ? 511 : 0;
   }, []);
 
@@ -285,7 +290,7 @@ function pickbetter(b, c, t) {
 }
 
 function boardforentries(entries) {
-  var board = _.map(_.range(81), function (val, key) {
+  var board = map(range(81), function (val, key) {
     return null;
   });
 
@@ -327,14 +332,8 @@ function shuffleArray(original) {
   }
 }
 
-function removeElement(array, from, to) {
-  var rest = array.slice((to || from) + 1 || array.length);
-  array.length = from < 0 ? array.length + from : from;
-  return array.push.apply(array, rest);
-};
-
 function makeArray(length, value) {
-  return _.map(_.range(length), function (val, key) {
+  return map(range(length), function (val, key) {
     return value;
   })
 }
