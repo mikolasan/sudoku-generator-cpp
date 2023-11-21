@@ -29,6 +29,14 @@ using House = Row;
 
 class Grid {
 public:
+    Grid() {}
+    void fill() {
+        for (auto )
+    }
+    void generate() {
+
+    }
+    std::string toString();
     void fill(std::string values);
     std::tuple<Row, Column, Box> getPeers(Cell cell);
     std::vector<House> getHouses();

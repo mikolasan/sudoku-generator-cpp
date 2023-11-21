@@ -26,7 +26,7 @@ class NakedSingle : Strategy {
             return "not applicable strategy";
         }
         auto candidates = cell.getCandidates();
-        if (candidates.size() >= 1) {
+        if (candidates.size() > 1) {
             return "more than one candidate";
         } else {
             return candidates.front();
@@ -34,7 +34,7 @@ class NakedSingle : Strategy {
     }
 };
 
-class CrossHatching : Strtegy {
+class CrossHatching : Strategy {
     int solve(Cell cell) {
         Row Row, Column column, Box box;
         std::tie(row, column, box) = grid.getPeers(cell);
