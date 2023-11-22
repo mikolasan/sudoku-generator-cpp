@@ -28,8 +28,7 @@ function makepuzzle(board) {
 
   for (var i = puzzle.length - 1; i >= 0; i--) {
     var e = puzzle[i];
-    removeElement(puzzle, i);
-
+    puzzle.splice(i, 1);
     var rating = checkpuzzle(boardforentries(puzzle), board);
     if (rating == -1) {
       puzzle.push(e);
@@ -38,12 +37,6 @@ function makepuzzle(board) {
 
   return boardforentries(puzzle);
 }
-
-function removeElement(array, from, to) {
-  var rest = array.slice((to || from) + 1 || array.length);
-  array.length = from < 0 ? array.length + from : from;
-  return array.push(...rest);
-};
 
 function checkpuzzle(puzzle, board) {
   if (board == undefined) {
@@ -114,36 +107,28 @@ function deduce(board) {
     var count = 0;
 
     // fill in any spots determined by direct conflicts
-    var tuple1 = figurebits(board);
-    var allowed = tuple1.allowed;
-    var needed = tuple1.needed;
+    var [allowed, needed] = figurebits(board);
 
     for (var pos = 0; pos < 81; pos++) {
       if (board[pos] == null) {
         var numbers = listbits(allowed[pos]);
         if (numbers.length == 0) {
           return [];
-        }
-        else if (numbers.length == 1) {
+        } else if (numbers.length == 1) {
           board[pos] = numbers[0];
           stuck = false;
-        }
-        else if (stuck == true) {
+        } else if (stuck) {
           var t = map(numbers, function (val, key) {
             return { pos: pos, num: val };
           });
 
-          var tuple2 = pickbetter(guess, count, t);
-          guess = tuple2.guess;
-          count = tuple2.count;
+          [guess, count] = pickbetter(guess, count, t);
         }
       }
     }
 
-    if (stuck == false) {
-      var tuple3 = figurebits(board);
-      allowed = tuple3.allowed;
-      needed = tuple3.needed;
+    if (!stuck) {
+      [allowed, needed] = figurebits(board);
     }
 
     // fill in any spots determined by elimination of other locations
@@ -165,29 +150,22 @@ function deduce(board) {
 
           if (spots.length == 0) {
             return [];
-          }
-          else if (spots.length == 1) {
+          } else if (spots.length == 1) {
             board[spots[0]] = n;
             stuck = false;
-          }
-          else if (stuck) {
+          } else if (stuck) {
             var t = map(spots, function (val, key) {
               return { pos: val, num: n };
             });
 
-            var tuple4 = pickbetter(guess, count, t);
-            guess = tuple4.guess;
-            count = tuple4.count;
+            [guess, count] = pickbetter(guess, count, t);
           }
         }
       }
     }
 
-    if (stuck == true) {
-      if (guess != null) {
-        shuffleArray(guess);
-      }
-
+    if (stuck) {
+      if (guess != null) shuffleArray(guess);
       return guess;
     }
   }
@@ -211,7 +189,7 @@ function figurebits(board) {
     }
   }
 
-  return { allowed: allowed, needed: needed };
+  return [allowed, needed];
 }
 
 function posfor(x, y, axis) {
@@ -225,17 +203,6 @@ function posfor(x, y, axis) {
   }
 
   return ([0, 3, 6, 27, 30, 33, 54, 57, 60][x] + [0, 1, 2, 9, 10, 11, 18, 19, 20][y])
-}
-
-function axisfor(pos, axis) {
-  if (axis == 0) {
-    return Math.floor(pos / 9);
-  }
-  else if (axis == 1) {
-    return pos % 9;
-  }
-
-  return Math.floor(pos / 27) * 3 + Math.floor(pos / 3) % 3;
 }
 
 function axismissing(board, x, axis) {
@@ -263,30 +230,18 @@ function listbits(bits) {
   return list;
 }
 
-function allowed(board, pos) {
-  var bits = 511;
-
-  for (var axis = 0; axis < 3; axis++) {
-    var x = axisfor(pos, axis);
-    bits = bits & axismissing(board, x, axis);
-  }
-
-  return bits;
-}
-
-// TODO: make sure callers utilize the return value correctly
 function pickbetter(b, c, t) {
   if (b == null || t.length < b.length) {
-    return { guess: t, count: 1 };
+    return [t, 1];
   }
   else if (t.length > b.length) {
-    return { guess: b, count: c };
+    return [b, c];
   }
   else if (randomInt(c) == 0) {
-    return { guess: t, count: c + 1 };
+    return [t, c + 1];
   }
 
-  return { guess: b, count: c + 1 };
+  return [b, c + 1];
 }
 
 function boardforentries(entries) {
