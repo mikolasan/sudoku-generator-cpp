@@ -17,7 +17,7 @@ int main() {
     assert(result2 == expected2);
 
     // Test case 3
-    int x3 = 1, y3 = 2, axis3 = NOT_SPECIFIED;
+    int x3 = 1, y3 = 2, axis3 = BLOCK;
     int result3 = posfor(x3, y3, axis3);
     int expected3 = 27 * (x3 / 3) + 3 * (x3 % 3) + 9 * (y3 / 3) + (y3 % 3);
     assert(result3 == expected3);

@@ -63,7 +63,8 @@ int axismissing(int board[], int x, int axis)
   return 511 ^ bits;
 }
 
-void listbits(int bits, int list[])
+// returns the size of `list`
+int listbits(int bits, int list[])
 {
   int index = 0;
   for (int y = 0; y < 9; y++)
@@ -73,54 +74,93 @@ void listbits(int bits, int list[])
       list[index++] = y;
     }
   }
+  return index;
 }
 
-void pickbetter(Entry b[], int c, Entry t[], int *count)
+void figurebits(int board[], int allowed[], int needed[])
 {
-  if (*count == -1 
-  || *count > 0 
-  || t->num < b->num 
-  || (t->num == b->num && rand() % c == 0))
+  for (int i = 0; i < BOARD_SIZE; i++)
   {
-    *b = *t;
-    *count = c + 1;
+    allowed[i] = board[i] == -1 ? 511 : 0;
+  }
+
+  for (int axis = 0; axis < 3; axis++)
+  {
+    for (int x = 0; x < 9; x++)
+    {
+      int bits = axismissing(board, x, axis);
+      needed[axis * 9 + x] = bits;
+      for (int y = 0; y < 9; y++)
+      {
+        int pos = posfor(x, y, axis);
+        allowed[pos] &= bits;
+      }
+    }
   }
 }
 
-void deduce(int board[])
+// TODO
+void pickbetter(Entry b[], int b_size, int c, Entry t[], int t_size)
 {
+  if (b == NULL || t_size < b_size)
+  {
+    b = t;
+    c = 1;
+    return;
+  }
+  if (t_size > b_size)
+  {
+    return;
+  }
+  if (rand() % c == 0)
+  {
+    b = t;
+    c++;
+    return;
+  }
+  else
+  {
+    c++;
+    return;
+  }
+}
+
+void deduce(int board[], Entry guess[])
+{
+  int allowed[81] = { 0 };
+  int needed[27] = { 0 };
+
   while (1)
   {
     int stuck = 1;
-    Entry guess;
-    guess.pos = guess.num = 0;
     int count = 0;
-
+    guess = 0;
     // fill in any spots determined by direct conflicts
-    figurebits(board, allowed, needed, 0);
-    // listbits(figurebits(board, allowed, needed, 0), &count);
-
+    figurebits(board, allowed, needed);
     for (int pos = 0; pos < BOARD_SIZE; pos++)
     {
       if (board[pos] == -1)
       {
         int numbers[9];
-        int numCount = 0;
-        listbits(allowed[pos], numbers);
-        if (count == 0)
+        int list_size = listbits(allowed[pos], numbers);
+        if (list_size == 0)
         {
-          if (numCount == 1)
-          {
-            board[pos] = numbers[0];
-            stuck = 0;
+          // return [];
+          return;
+        }
+        else if (list_size == 1)
+        {
+          board[pos] = numbers[0];
+          stuck = 0;
+        }
+        else if (stuck)
+        {
+          Entry t[9];
+          for (int i = 0; i < list_size; i++) {
+            t[i].pos = pos;
+            t[i].num = numbers[0];
           }
-          else if (stuck)
-          {
-            Entry t;
-            t.pos = pos;
-            t.num = numbers[0];
-            pickbetter(&guess, count, &t, &count);
-          }
+          pickbetter(guess, count, t, list_size);
         }
       }
     }
@@ -187,28 +227,7 @@ void deduce(int board[])
   }
 }
 
-int figurebits(int board[], int allowed[], int needed[], int isNeeded)
-{
-  int bits = 0;
 
-  for (int axis = 0; axis < 3; axis++)
-  {
-    for (int x = 0; x < 9; x++)
-    {
-      int b = axismissing(board, x, axis);
-      // needed[axis * 9 + x] = b;
-      // bits |= b;
-
-      for (int y = 0; y < 9; y++)
-      {
-        int pos = posfor(x, y, axis);
-        allowed[pos] &= b;
-      }
-    }
-  }
-
-  return bits;
-}
 
 // void solveboard(int original[], Entry answer[], int *answerCount)
 // {
