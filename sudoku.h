@@ -17,10 +17,12 @@ typedef struct
 
 void makeArray(int arr[], int length, int value);
 void shuffleArray(int arr[], int length);
+void shuffleEntries(Entry *arr, int length);
 int posfor(int x, int y, int axis);
 int axismissing(int board[], int x, int axis);
 int listbits(int bits, int list[]);
 void figurebits(int board[], int allowed[], int needed[]);
-void deduce(int board[]);
+void pickbetter(Entry **b, int b_size, int *c, Entry *t, int t_size);
+void deduce(int board[], Entry *guess);
 
 #endif 

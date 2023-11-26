@@ -28,6 +28,17 @@ void shuffleArray(int arr[], int length)
   }
 }
 
+void shuffleEntries(Entry *arr, int length)
+{
+  while (--length)
+  {
+    int i = rand() % length;
+    Entry temp = arr[i];
+    arr[i] = arr[length];
+    arr[length] = temp;
+  }
+}
+
 // `y` is a variable from 0 to 8
 // `axis` specifies if `y` is moving along vertical
 // or horizontal axis, or in a block
@@ -99,33 +110,34 @@ void figurebits(int board[], int allowed[], int needed[])
   }
 }
 
-// TODO
-void pickbetter(Entry b[], int b_size, int c, Entry t[], int t_size)
+void pickbetter(Entry **b, int *b_size, int *c, Entry *t, int t_size)
 {
-  if (b == NULL || t_size < b_size)
+  if (*b == NULL || t_size < b_size)
   {
-    b = t;
-    c = 1;
+    *b = t;
+    *b_size = t_size;
+    *c = 1;
     return;
   }
   if (t_size > b_size)
   {
     return;
   }
-  if (rand() % c == 0)
+  if (rand() % *c == 0)
   {
-    b = t;
-    c++;
+    *b = t;
+    *b_size = t_size;
+    (*c)++;
     return;
   }
   else
   {
-    c++;
+    (*c)++;
     return;
   }
 }
 
-void deduce(int board[], Entry guess[])
+void deduce(int board[], Entry *guess)
 {
   int allowed[81] = { 0 };
   int needed[27] = { 0 };
@@ -133,8 +145,9 @@ void deduce(int board[], Entry guess[])
   while (1)
   {
     int stuck = 1;
+    guess = NULL;
+    int guess_size = 0;
     int count = 0;
-    guess = 0;
     // fill in any spots determined by direct conflicts
     figurebits(board, allowed, needed);
     for (int pos = 0; pos < BOARD_SIZE; pos++)
@@ -155,20 +168,19 @@ void deduce(int board[], Entry guess[])
         }
         else if (stuck)
         {
-          Entry t[9];
+          Entry *t = (Entry *)malloc(list_size * sizeof(Entry));
           for (int i = 0; i < list_size; i++) {
             t[i].pos = pos;
-            t[i].num = numbers[0];
+            t[i].num = numbers[i];
           }
-          pickbetter(guess, count, t, list_size);
+          pickbetter(&guess, &guess_size, &count, t, list_size);
         }
       }
     }
 
     if (!stuck)
     {
-      // listbits(figurebits(board, allowed, needed, 1), &count);
-      figurebits(board, allowed, needed, 1);
+      figurebits(board, allowed, needed);
     }
 
     // fill in any spots determined by elimination of other locations
@@ -177,9 +189,8 @@ void deduce(int board[], Entry guess[])
       for (int x = 0; x < 9; x++)
       {
         int numbers[9];
-        listbits(needed[axis * 9 + x], numbers);
-
-        for (int i = 0; i < 9; i++)
+        int list_size = listbits(needed[axis * 9 + x], numbers);
+        for (int i = 0; i < list_size; i++)
         {
           int n = numbers[i];
           int bit = 1 << n;
@@ -197,6 +208,7 @@ void deduce(int board[], Entry guess[])
 
           if (spotCount == 0)
           {
+            // return [];
             return;
           }
           else if (spotCount == 1)
@@ -206,10 +218,12 @@ void deduce(int board[], Entry guess[])
           }
           else if (stuck)
           {
-            Entry t;
-            t.pos = spots[0];
-            t.num = n;
-            pickbetter(&guess, count, &t, &count);
+            Entry *t = (Entry *)malloc(list_size * sizeof(Entry));
+            for (int i = 0; i < list_size; i++) {
+              t[i].pos = spots[i];
+              t[i].num = n;
+            }
+            pickbetter(&guess, &guess_size, &count, t, list_size);
           }
         }
       }
@@ -217,10 +231,9 @@ void deduce(int board[], Entry guess[])
 
     if (stuck)
     {
-      if (guess.num != 0)
+      if (guess)
       {
-        int arr[2] = {guess.pos, guess.num};
-        return makeArray(board, 2, arr);
+        shuffleEntries(guess, guess_size);
       }
       return;
     }

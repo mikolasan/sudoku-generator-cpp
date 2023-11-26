@@ -31,8 +31,8 @@ add_test(NAME ListBitsTest COMMAND test_list_bits)
 add_executable(test_figure_bits ${SOURCE_FILES} test_figure_bits.c)
 add_test(NAME FigureBitsTest COMMAND test_figure_bits)
 
-add_executable(test_deduce ${SOURCE_FILES} test_deduce.c)
-add_test(NAME DeduceTest COMMAND test_deduce)
-
 add_executable(test_pick_better ${SOURCE_FILES} test_pick_better.c)
 add_test(NAME PickBetterTest COMMAND test_pick_better)
+
+add_executable(test_deduce ${SOURCE_FILES} test_deduce.c)
+add_test(NAME DeduceTest COMMAND test_deduce)
