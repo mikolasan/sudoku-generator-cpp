@@ -7,7 +7,7 @@ int main() {
     // Example usage
     int board[BOARD_SIZE];
     makeArray(board, BOARD_SIZE, -1);
-    Entry puzzle[BOARD_SIZE];
+    Guess puzzle[BOARD_SIZE];
     // makepuzzle(board, puzzle);
 
     return 0;

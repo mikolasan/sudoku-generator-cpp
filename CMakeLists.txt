@@ -36,3 +36,6 @@ add_test(NAME PickBetterTest COMMAND test_pick_better)
 
 add_executable(test_deduce ${SOURCE_FILES} test_deduce.c)
 add_test(NAME DeduceTest COMMAND test_deduce)
+
+add_executable(test_solve_next ${SOURCE_FILES} test_solve_next.c)
+add_test(NAME SolveNextTest COMMAND test_solve_next)

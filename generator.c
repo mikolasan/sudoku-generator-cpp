@@ -28,12 +28,12 @@ void shuffleArray(int arr[], int length)
   }
 }
 
-void shuffleEntries(Entry *arr, int length)
+void shuffle_guesses(Guess *arr, int length)
 {
   while (--length)
   {
     int i = rand() % length;
-    Entry temp = arr[i];
+    Guess temp = arr[i];
     arr[i] = arr[length];
     arr[length] = temp;
   }
@@ -110,21 +110,24 @@ void figurebits(int board[], int allowed[], int needed[])
   }
 }
 
-void pickbetter(Entry **b, int *b_size, int *c, Entry *t, int t_size)
+void pickbetter(Guess **b, int *b_size, int *c, Guess *t, int t_size)
 {
-  if (*b == NULL || t_size < b_size)
+  if (*b == NULL || t_size < *b_size)
   {
+    if (*b) free(*b);
     *b = t;
     *b_size = t_size;
     *c = 1;
     return;
   }
-  if (t_size > b_size)
+  if (t_size > *b_size)
   {
+    free(t);
     return;
   }
   if (rand() % *c == 0)
   {
+    free(*b);
     *b = t;
     *b_size = t_size;
     (*c)++;
@@ -132,12 +135,13 @@ void pickbetter(Entry **b, int *b_size, int *c, Entry *t, int t_size)
   }
   else
   {
+    free(t);
     (*c)++;
     return;
   }
 }
 
-void deduce(int board[], Entry *guess)
+void deduce(int board[], Guess **guesses, int *guess_size)
 {
   int allowed[81] = { 0 };
   int needed[27] = { 0 };
@@ -145,8 +149,7 @@ void deduce(int board[], Entry *guess)
   while (1)
   {
     int stuck = 1;
-    guess = NULL;
-    int guess_size = 0;
+    *guesses = NULL;
     int count = 0;
     // fill in any spots determined by direct conflicts
     figurebits(board, allowed, needed);
@@ -168,12 +171,12 @@ void deduce(int board[], Entry *guess)
         }
         else if (stuck)
         {
-          Entry *t = (Entry *)malloc(list_size * sizeof(Entry));
+          Guess *t = (Guess *)malloc(list_size * sizeof(Guess));
           for (int i = 0; i < list_size; i++) {
             t[i].pos = pos;
             t[i].num = numbers[i];
           }
-          pickbetter(&guess, &guess_size, &count, t, list_size);
+          pickbetter(guesses, guess_size, &count, t, list_size);
         }
       }
     }
@@ -218,12 +221,12 @@ void deduce(int board[], Entry *guess)
           }
           else if (stuck)
           {
-            Entry *t = (Entry *)malloc(list_size * sizeof(Entry));
+            Guess *t = (Guess *)malloc(list_size * sizeof(Guess));
             for (int i = 0; i < list_size; i++) {
               t[i].pos = spots[i];
               t[i].num = n;
             }
-            pickbetter(&guess, &guess_size, &count, t, list_size);
+            pickbetter(guesses, guess_size, &count, t, list_size);
           }
         }
       }
@@ -231,18 +234,16 @@ void deduce(int board[], Entry *guess)
 
     if (stuck)
     {
-      if (guess)
+      if (*guesses)
       {
-        shuffleEntries(guess, guess_size);
+        shuffle_guesses(*guesses, *guess_size);
       }
       return;
     }
   }
 }
 
-
-
-// void solveboard(int original[], Entry answer[], int *answerCount)
+// void solveboard(int original[], Guess answer[], int *answerCount)
 // {
 //   int board[BOARD_SIZE];
 //   makeArray(board, BOARD_SIZE, -1);
@@ -250,7 +251,7 @@ void deduce(int board[], Entry *guess)
 //   makeArray(guesses, 81, 0);
 
 //   *answerCount = 0;
-//   Entry track[81];
+//   Guess track[81];
 //   track[0].num = track[0].pos = track[0].num = 0;
 //   track[0].pos = 0;
 
@@ -261,7 +262,7 @@ void deduce(int board[], Entry *guess)
 
 //     int workspace[BOARD_SIZE];
 //     makeArray(workspace, BOARD_SIZE, 0);
-//     Entry tuple2 = track[track[0].count].guesses[track[0].count];
+//     Guess tuple2 = track[track[0].count].guesses[track[0].count];
 //     workspace[tuple2.pos] = tuple2.num;
 
 //     deduce(workspace);
@@ -286,53 +287,66 @@ void deduce(int board[], Entry *guess)
 //   }
 // }
 
-// void solvenext(Entry remembered[], Entry answer[], int *answerCount)
+void solvenext(SolveItem **remembered, int *size, SolveNext *next)
+{
+  int pop_pos = 0;
+  while (*size)
+  {
+    if (*size >= 10)
+    {
+      printf("reached the memory limit\n");
+      return;
+    }
+
+    // pop
+    SolveItem *item = remembered[pop_pos];
+    (*size)--;
+    if (item->c >= item->guess_size)
+    {
+      pop_pos++;
+      continue;
+    }
+
+    (*size)++;
+    int c = item->c;
+    item->c = c + 1;
+
+    int pos = item->guesses[c].pos;
+    int n = item->guesses[c].num;
+    
+    int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
+    for (int i = 0; i < BOARD_SIZE; ++i)
+    {
+      workspace[i] = item->board[i];
+    }
+    workspace[pos] = n;
+    Guess *guesses = NULL;
+    int guess_size = 0;
+    deduce(workspace, &guesses, &guess_size);
+
+    if (guesses == NULL)
+    {
+      next->remembered = remembered;
+      next->workspace = workspace;
+      return;
+    }
+
+    int j = *size;
+    remembered[j] = (SolveItem *)malloc(sizeof(SolveItem));
+    remembered[j]->guesses = guesses;
+    remembered[j]->guess_size = guess_size;
+    remembered[j]->c = 0;
+    remembered[j]->board = workspace;
+    (*size)++;
+  }
+
+  next->remembered = NULL;
+  next->workspace = NULL;
+}
+
+// void makepuzzle(int board[], Guess puzzle[])
 // {
-//   while (*answerCount == 0 && remembered[0].count < remembered[0].guesses.length)
-//   {
-//     Entry tuple1 = remembered[0];
-
-//     if (tuple1.count >= tuple1.guesses.length)
-//     {
-//       continue;
-//     }
-
-//     remembered[remembered[0].count] = tuple1;
-//     remembered[0].count++;
-//     int workspace[BOARD_SIZE];
-//     makeArray(workspace, BOARD_SIZE, 0);
-//     Entry tuple2 = tuple1.guesses[tuple1.count];
-
-//     workspace[tuple2.pos] = tuple2.num;
-
-//     int guesses[81][9];
-//     makeArray(guesses, 81, 0);
-//     deduce(workspace);
-
-//     if (workspace[0] == -1)
-//     {
-//       *answerCount = 1;
-//       for (int i = 0; i < BOARD_SIZE; i++)
-//       {
-//         answer[i] = workspace[i];
-//       }
-//     }
-//     else
-//     {
-//       remembered[0].count = 0;
-//       remembered[0].board = workspace;
-//     }
-//   }
-
-//   if (*answerCount == 0)
-//   {
-//     makeArray(answer, BOARD_SIZE, -1);
-//   }
-// }
-
-// void makepuzzle(int board[], Entry puzzle[])
-// {
-//   Entry deduced[BOARD_SIZE];
+//   Guess deduced[BOARD_SIZE];
 //   makeArray(deduced, BOARD_SIZE, -1);
 //   int order[BOARD_SIZE];
 //   makeArray(order, BOARD_SIZE, 0);
@@ -361,7 +375,7 @@ void deduce(int board[], Entry *guess)
 
 //   for (int i = BOARD_SIZE - 1; i >= 0; i--)
 //   {
-//     Entry e = puzzle[i];
+//     Guess e = puzzle[i];
 //     puzzle[i].pos = -1;
 //     int rating = checkpuzzle(boardforentries(puzzle), board);
 //     if (rating == -1)
@@ -371,7 +385,7 @@ void deduce(int board[], Entry *guess)
 //   }
 // }
 
-// int checkpuzzle(Entry puzzle[], int board[])
+// int checkpuzzle(Guess puzzle[], int board[])
 // {
 //   if (board == NULL)
 //   {
@@ -379,7 +393,7 @@ void deduce(int board[], Entry *guess)
 //     makeArray(board, BOARD_SIZE, -1);
 //   }
 
-//   Entry tuple1[BOARD_SIZE];
+//   Guess tuple1[BOARD_SIZE];
 //   solveboard(puzzle, tuple1);
 //   if (tuple1[0].num == -1)
 //   {
@@ -392,7 +406,7 @@ void deduce(int board[], Entry *guess)
 //   }
 
 //   int difficulty = tuple1[0].count;
-//   Entry tuple2[BOARD_SIZE];
+//   Guess tuple2[BOARD_SIZE];
 //   solvenext(tuple1, tuple2);
 
 //   if (tuple2[0].num != -1)

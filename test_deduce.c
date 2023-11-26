@@ -38,8 +38,9 @@ int main() {
     printf("Original Board:\n");
     printBoard(board1);
 
-    Entry *guess = NULL;
-    deduce(board1, guess);
+    Guess *guesses = NULL;
+    int guess_size = 0;
+    deduce(board1, &guesses, &guess_size);
 
     printf("\nSolved Board:\n");
     printBoard(board1);
