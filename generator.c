@@ -3,12 +3,6 @@
 
 #include "sudoku.h"
 
-
-
-int allowed[BOARD_SIZE];
-int needed[BOARD_SIZE * 3];
-
-
 void makeArray(int arr[], int length, int value)
 {
   for (int i = 0; i < length; i++)
@@ -149,6 +143,11 @@ void deduce(int board[], Guess **guesses, int *guess_size)
   while (1)
   {
     int stuck = 1;
+    if (*guesses)
+    {
+      free(*guesses);
+      *guess_size = 0;
+    }
     *guesses = NULL;
     int count = 0;
     // fill in any spots determined by direct conflicts
@@ -221,12 +220,12 @@ void deduce(int board[], Guess **guesses, int *guess_size)
           }
           else if (stuck)
           {
-            Guess *t = (Guess *)malloc(list_size * sizeof(Guess));
-            for (int i = 0; i < list_size; i++) {
+            Guess *t = (Guess *)malloc(spotCount * sizeof(Guess));
+            for (int i = 0; i < spotCount; i++) {
               t[i].pos = spots[i];
               t[i].num = n;
             }
-            pickbetter(guesses, guess_size, &count, t, list_size);
+            pickbetter(guesses, guess_size, &count, t, spotCount);
           }
         }
       }
@@ -243,56 +242,56 @@ void deduce(int board[], Guess **guesses, int *guess_size)
   }
 }
 
-// void solveboard(int original[], Guess answer[], int *answerCount)
-// {
-//   int board[BOARD_SIZE];
-//   makeArray(board, BOARD_SIZE, -1);
-//   int guesses[81][9];
-//   makeArray(guesses, 81, 0);
+void solveboard(int original[], SolveNext *answer)
+{
+  int board[BOARD_SIZE];
+  for (int i = 0; i < BOARD_SIZE; ++i)
+  {
+    board[i] = original[i];
+  }
 
-//   *answerCount = 0;
-//   Guess track[81];
-//   track[0].num = track[0].pos = track[0].num = 0;
-//   track[0].pos = 0;
+  Guess *guesses = NULL;
+  int guess_size = 0;
+  deduce(board, &guesses, &guess_size);
 
-//   while (*answerCount == 0 && track[0].count < track[0].guesses.length)
-//   {
-//     track[track[0].count] = track[0];
-//     track[0].count++;
+  if (guesses == NULL)
+  {
+    answer->workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
+    for (int i = 0; i < BOARD_SIZE; ++i)
+    {
+      answer->workspace[i] = board[i];
+    }
+    answer->remembered = NULL;
+    return;
+  }
 
-//     int workspace[BOARD_SIZE];
-//     makeArray(workspace, BOARD_SIZE, 0);
-//     Guess tuple2 = track[track[0].count].guesses[track[0].count];
-//     workspace[tuple2.pos] = tuple2.num;
+  int max_size = MEMORY_LIMIT;  // Adjust the size as needed
+  int size = 1;
+  SolveItem **track = (SolveItem **)malloc(max_size * sizeof(SolveItem *));
+  track[0] = (SolveItem *)malloc(sizeof(SolveItem));
+  track[0]->guesses = guesses;
+  track[0]->guess_size = guess_size;
+  track[0]->c = 0;
+  track[0]->board = (int *)malloc(BOARD_SIZE * sizeof(int));
+  for (int i = 0; i < BOARD_SIZE; ++i)
+  {
+    track[0]->board[i] = board[i];
+  }
 
-//     deduce(workspace);
-
-//     if (workspace[0] == -1)
-//     {
-//       *answerCount = -1;
-//     }
-//     else
-//     {
-//       track[0].count = 0;
-//       track[0].board = workspace;
-//     }
-//   }
-
-//   if (*answerCount != -1)
-//   {
-//     for (int i = 0; i < BOARD_SIZE; i++)
-//     {
-//       answer[i] = track[0].board[i];
-//     }
-//   }
-// }
+  solvenext(track, &size, answer);
+}
 
 void solvenext(SolveItem **remembered, int *size, SolveNext *next)
 {
   int pop_pos = 0;
+  int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
+
+  next->remembered = remembered;
+  next->workspace = workspace;
+  
   while (*size)
   {
-    if (*size >= 10)
+    if (*size >= MEMORY_LIMIT)
     {
       printf("reached the memory limit\n");
       return;
@@ -314,7 +313,6 @@ void solvenext(SolveItem **remembered, int *size, SolveNext *next)
     int pos = item->guesses[c].pos;
     int n = item->guesses[c].num;
     
-    int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
     for (int i = 0; i < BOARD_SIZE; ++i)
     {
       workspace[i] = item->board[i];
@@ -326,8 +324,6 @@ void solvenext(SolveItem **remembered, int *size, SolveNext *next)
 
     if (guesses == NULL)
     {
-      next->remembered = remembered;
-      next->workspace = workspace;
       return;
     }
 
@@ -344,55 +340,78 @@ void solvenext(SolveItem **remembered, int *size, SolveNext *next)
   next->workspace = NULL;
 }
 
-// void makepuzzle(int board[], Guess puzzle[])
+void makepuzzle(int *input_board, int *output_board)
+{
+  int deduced[BOARD_SIZE];
+  makeArray(deduced, BOARD_SIZE, -1);
+
+  int order[BOARD_SIZE];
+  for (int i = 0; i < BOARD_SIZE; i++)
+  {
+    order[i] = i;
+  }
+  shuffleArray(order, BOARD_SIZE);
+
+  Guess puzzle[BOARD_SIZE];
+  int puzzle_size = 0;
+  for (int i = 0; i < BOARD_SIZE; i++)
+  {
+    int pos = order[i];
+    if (deduced[pos] == -1)
+    {
+      puzzle[puzzle_size].pos = pos;
+      puzzle[puzzle_size].num = input_board[pos];
+      puzzle_size++;
+      
+      deduced[pos] = input_board[pos];
+      
+      Guess *guesses = NULL;
+      int guess_size = 0;
+      deduce(deduced, &guesses, &guess_size);
+    }
+  }
+
+  shuffle_guesses(puzzle, puzzle_size);
+
+  int deleted[BOARD_SIZE];
+  for (int i = puzzle_size - 1; i >= 0; i--)
+  {
+    Guess e = puzzle[i];
+    deleted[i] = 1;
+    int *tmp_board = (int *)malloc(BOARD_SIZE * sizeof(int));
+    boardforentries(puzzle, puzzle_size, tmp_board);
+    int rating = -1; // TODO: checkpuzzle(tmp_board, input_board);
+    if (rating == -1)
+    {
+      deleted[i] = 0;
+    }
+  }
+
+  Guess new_puzzle[BOARD_SIZE];
+  int new_puzzle_size = 0;
+  for (int i = 0; i < puzzle_size; ++i)
+  {
+    if (!deleted[i])
+    {
+      new_puzzle[new_puzzle_size++] = puzzle[i];
+    }
+  }
+  boardforentries(new_puzzle, new_puzzle_size, output_board);
+}
+
+void boardforentries(Guess *entries, int entries_size, int *board)
+{
+    makeArray(board, BOARD_SIZE, -1);
+
+    for (int i = 0; i < entries_size; ++i) {
+        Guess item = entries[i];
+        board[item.pos] = item.num;
+    }
+}
+
+// return rating
+// int checkpuzzle(int puzzle[], int board[])
 // {
-//   Guess deduced[BOARD_SIZE];
-//   makeArray(deduced, BOARD_SIZE, -1);
-//   int order[BOARD_SIZE];
-//   makeArray(order, BOARD_SIZE, 0);
-
-//   for (int i = 0; i < BOARD_SIZE; i++)
-//   {
-//     order[i] = i;
-//   }
-
-//   shuffleArray(order, BOARD_SIZE);
-
-//   for (int i = 0; i < BOARD_SIZE; i++)
-//   {
-//     int pos = order[i];
-
-//     if (deduced[pos].num == -1)
-//     {
-//       puzzle[i].pos = pos;
-//       puzzle[i].num = board[pos];
-//       deduced[pos] = board[pos];
-//       deduce(deduced);
-//     }
-//   }
-
-//   shuffleArray(puzzle, BOARD_SIZE);
-
-//   for (int i = BOARD_SIZE - 1; i >= 0; i--)
-//   {
-//     Guess e = puzzle[i];
-//     puzzle[i].pos = -1;
-//     int rating = checkpuzzle(boardforentries(puzzle), board);
-//     if (rating == -1)
-//     {
-//       puzzle[i] = e;
-//     }
-//   }
-// }
-
-// int checkpuzzle(Guess puzzle[], int board[])
-// {
-//   if (board == NULL)
-//   {
-//     board = (int *)malloc(sizeof(int) * BOARD_SIZE);
-//     makeArray(board, BOARD_SIZE, -1);
-//   }
-
 //   Guess tuple1[BOARD_SIZE];
 //   solveboard(puzzle, tuple1);
 //   if (tuple1[0].num == -1)

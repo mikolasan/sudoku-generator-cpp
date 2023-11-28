@@ -39,3 +39,9 @@ add_test(NAME DeduceTest COMMAND test_deduce)
 
 add_executable(test_solve_next ${SOURCE_FILES} test_solve_next.c)
 add_test(NAME SolveNextTest COMMAND test_solve_next)
+
+add_executable(test_make_puzzle ${SOURCE_FILES} test_make_puzzle.c)
+add_test(NAME MakePuzzleTest COMMAND test_make_puzzle)
+
+add_executable(test_solve_board ${SOURCE_FILES} test_solve_board.c)
+add_test(NAME SolveBoardTest COMMAND test_solve_board)

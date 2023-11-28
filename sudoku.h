@@ -1,6 +1,7 @@
 #ifndef SUDOKU_H
 #define SUDOKU_H
 
+#define MEMORY_LIMIT 1000
 #define BOARD_SIZE 81
 
 enum AXIS {
@@ -39,5 +40,8 @@ void figurebits(int board[], int allowed[], int needed[]);
 void pickbetter(Guess **b, int *b_size, int *c, Guess *t, int t_size);
 void deduce(int board[], Guess **guess, int *guess_size);
 void solvenext(SolveItem **remembered, int *size, SolveNext *next);
+void makepuzzle(int *input_board, int *output_board);
+void boardforentries(Guess *entries, int entries_size, int *board);
+void solveboard(int original[], SolveNext *answer);
 
 #endif 
