@@ -265,74 +265,65 @@ void solveboard(int original[], SolveNext *answer)
     return;
   }
 
-  int max_size = MEMORY_LIMIT;  // Adjust the size as needed
-  int size = 1;
-  SolveItem **track = (SolveItem **)malloc(max_size * sizeof(SolveItem *));
-  track[0] = (SolveItem *)malloc(sizeof(SolveItem));
-  track[0]->guesses = guesses;
-  track[0]->guess_size = guess_size;
-  track[0]->c = 0;
-  track[0]->board = (int *)malloc(BOARD_SIZE * sizeof(int));
+  List *track = NULL;
+  SolveItem *item = (SolveItem *)malloc(sizeof(SolveItem));
+  item->guesses = guesses;
+  item->guess_size = guess_size;
+  item->c = 0;
+  item->board = (int *)malloc(BOARD_SIZE * sizeof(int));
   for (int i = 0; i < BOARD_SIZE; ++i)
   {
-    track[0]->board[i] = board[i];
+    item->board[i] = board[i];
   }
+  list_push_back(&track, (void *)item);
+  int size = 1;
 
   solvenext(track, &size, answer);
 }
 
-void solvenext(SolveItem **remembered, int *size, SolveNext *next)
+void solvenext(List *remembered, int *size, SolveNext *next)
 {
-  int pop_pos = 0;
   int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
 
-  next->remembered = remembered;
-  next->workspace = workspace;
-  
   while (*size)
   {
-    if (*size >= MEMORY_LIMIT)
-    {
-      printf("reached the memory limit\n");
-      return;
-    }
-
-    // pop
-    SolveItem *item = remembered[pop_pos];
+    SolveItem *item = (SolveItem *)list_pop_back(&remembered);
     (*size)--;
     if (item->c >= item->guess_size)
     {
-      pop_pos++;
       continue;
     }
 
-    (*size)++;
     int c = item->c;
     item->c = c + 1;
-
-    int pos = item->guesses[c].pos;
-    int n = item->guesses[c].num;
+    list_push_back(&remembered, item);
+    (*size)++;
     
     for (int i = 0; i < BOARD_SIZE; ++i)
     {
       workspace[i] = item->board[i];
     }
+    int pos = item->guesses[c].pos;
+    int n = item->guesses[c].num;
     workspace[pos] = n;
+
     Guess *guesses = NULL;
     int guess_size = 0;
     deduce(workspace, &guesses, &guess_size);
 
     if (guesses == NULL)
     {
+      next->remembered = remembered;
+      next->workspace = workspace;
       return;
     }
 
-    int j = *size;
-    remembered[j] = (SolveItem *)malloc(sizeof(SolveItem));
-    remembered[j]->guesses = guesses;
-    remembered[j]->guess_size = guess_size;
-    remembered[j]->c = 0;
-    remembered[j]->board = workspace;
+    SolveItem *next_item = (SolveItem *)malloc(sizeof(SolveItem));
+    next_item->guesses = guesses;
+    next_item->guess_size = guess_size;
+    next_item->c = 0;
+    next_item->board = workspace;
+    list_push_back(&remembered, (void *)next_item);
     (*size)++;
   }
 

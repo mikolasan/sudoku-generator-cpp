@@ -5,6 +5,7 @@ project(sudoku_generator VERSION 0.1.0 LANGUAGES C)
 set(CMAKE_C_STANDARD 99)
 
 set(SOURCE_FILES
+    list.c
     generator.c
 )
 
@@ -45,3 +46,6 @@ add_test(NAME MakePuzzleTest COMMAND test_make_puzzle)
 
 add_executable(test_solve_board ${SOURCE_FILES} test_solve_board.c)
 add_test(NAME SolveBoardTest COMMAND test_solve_board)
+
+add_executable(test_list ${SOURCE_FILES} test_list.c)
+add_test(NAME ListTest COMMAND test_list)
