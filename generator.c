@@ -242,7 +242,7 @@ void deduce(int board[], Guess **guesses, int *guess_size)
   }
 }
 
-void solveboard(int original[], SolveNext *answer)
+void solveboard(const int *const original, SolveNext *answer)
 {
   int board[BOARD_SIZE];
   for (int i = 0; i < BOARD_SIZE; ++i)
@@ -276,33 +276,41 @@ void solveboard(int original[], SolveNext *answer)
     item->board[i] = board[i];
   }
   list_push_back(&track, (void *)item);
-  int size = 1;
-
-  solvenext(track, &size, answer);
+  
+  solvenext(track, answer);
 }
 
-void solvenext(List *remembered, int *size, SolveNext *next)
+void solvenext(List *remembered, SolveNext *next)
 {
   int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
+  next->workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
 
-  while (*size)
+  while (!list_is_empty(remembered))
   {
     SolveItem *item = (SolveItem *)list_pop_back(&remembered);
-    (*size)--;
     if (item->c >= item->guess_size)
     {
+      free(item);
       continue;
     }
 
-    int c = item->c;
-    item->c = c + 1;
-    list_push_back(&remembered, item);
-    (*size)++;
-    
     for (int i = 0; i < BOARD_SIZE; ++i)
     {
       workspace[i] = item->board[i];
     }
+    int c = item->c;
+
+    SolveItem *next_count_item = (SolveItem *)malloc(sizeof(SolveItem));
+    next_count_item->guesses = item->guesses;
+    next_count_item->guess_size = item->guess_size;
+    next_count_item->c = item->c + 1;
+    next_count_item->board = (int *)malloc(BOARD_SIZE * sizeof(int));
+    for (int i = 0; i < BOARD_SIZE; ++i)
+    {
+      next_count_item->board[i] = item->board[i];
+    }
+    list_push_back(&remembered, next_count_item);
+
     int pos = item->guesses[c].pos;
     int n = item->guesses[c].num;
     workspace[pos] = n;
@@ -314,7 +322,11 @@ void solvenext(List *remembered, int *size, SolveNext *next)
     if (guesses == NULL)
     {
       next->remembered = remembered;
-      next->workspace = workspace;
+      for (int i = 0; i < BOARD_SIZE; ++i)
+      {
+        next->workspace[i] = workspace[i];
+      }
+      free(workspace);
       return;
     }
 
@@ -322,13 +334,22 @@ void solvenext(List *remembered, int *size, SolveNext *next)
     next_item->guesses = guesses;
     next_item->guess_size = guess_size;
     next_item->c = 0;
-    next_item->board = workspace;
+    next_item->board = (int *)malloc(BOARD_SIZE * sizeof(int));
+    for (int i = 0; i < BOARD_SIZE; ++i)
+    {
+      next_item->board[i] = workspace[i];
+    }
     list_push_back(&remembered, (void *)next_item);
-    (*size)++;
   }
 
-  next->remembered = NULL;
+  while (!list_is_empty(next->remembered))
+  {
+    SolveItem *item = (SolveItem *)list_pop_back(&next->remembered);
+    free(item);
+  }
+  free(next->workspace);
   next->workspace = NULL;
+  free(workspace);
 }
 
 void makepuzzle(int *input_board, int *output_board)

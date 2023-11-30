@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <assert.h>
 
 #include "sudoku.h"
@@ -20,6 +21,8 @@ void freeSolveNext(SolveNext *next) {
 
 int main()
 {
+    srand(time(NULL)); // use current time as seed for random generator
+
     // Test case
     int board1[BOARD_SIZE] = {
         -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -31,6 +34,7 @@ int main()
         -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    
     printf("Original Board:\n");
     printBoard(board1);
 
@@ -55,11 +59,10 @@ int main()
         item->board[i] = board1[i];
     }
     list_push_back(&remembered, (void *)item);
-    int size = 1;
     SolveNext next;
     next.workspace = NULL;
     next.remembered = NULL;
-    solvenext(remembered, &size, &next);
+    solvenext(remembered, &next);
 
     assert(next.remembered != NULL);
     assert(next.workspace != NULL);
@@ -67,11 +70,11 @@ int main()
     printf("\nSolved Board:\n");
     printBoard(next.workspace);
 
-    guesses = NULL;
-    guess_size = 0;
-    deduce(next.workspace, &guesses, &guess_size);
-    printf("\nDeduced Board:\n");
-    printBoard(next.workspace);
+    // guesses = NULL;
+    // guess_size = 0;
+    // deduce(next.workspace, &guesses, &guess_size);
+    // printf("\nDeduced Board:\n");
+    // printBoard(next.workspace);
 
     for (int i = 0; i < BOARD_SIZE; ++i)
     {
