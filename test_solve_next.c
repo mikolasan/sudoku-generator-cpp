@@ -5,7 +5,8 @@
 
 #include "sudoku.h"
 
-void printBoard(int board[]) {
+void printBoard(int board[])
+{
     for (int i = 0; i < 9; ++i) {
         for (int j = 0; j < 9; ++j) {
             printf("%2d ", board[i * 9 + j]);
@@ -14,7 +15,8 @@ void printBoard(int board[]) {
     }
 }
 
-void freeSolveNext(SolveNext *next) {
+void freeSolveNext(SolveNext *next)
+{
     free(next->workspace);
     free(next->remembered);
 }

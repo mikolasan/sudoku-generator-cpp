@@ -49,3 +49,9 @@ add_test(NAME SolveBoardTest COMMAND test_solve_board)
 
 add_executable(test_list ${SOURCE_FILES} test_list.c)
 add_test(NAME ListTest COMMAND test_list)
+
+add_executable(test_check_puzzle ${SOURCE_FILES} test_check_puzzle.c)
+add_test(NAME CheckPuzzleTest COMMAND test_check_puzzle)
+
+add_executable(test_find_next_move ${SOURCE_FILES} test_find_next_move.c)
+add_test(NAME FindNextMoveTest COMMAND test_find_next_move)

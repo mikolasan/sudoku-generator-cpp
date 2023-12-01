@@ -17,7 +17,8 @@ void printBoard(int *board)
   }
 }
 
-void freeSolveNext(SolveNext *next) {
+void freeSolveNext(SolveNext *next)
+{
     free(next->workspace);
     free(next->remembered);
 }

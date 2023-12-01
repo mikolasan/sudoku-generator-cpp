@@ -3,7 +3,7 @@
 
 #include "list.h"
 
-int list_is_empty(List *list)
+int list_is_empty(const List *const list)
 {
   return list == NULL ? 1 : 0;
 }
@@ -37,4 +37,27 @@ void list_push_back(List **list, void *value)
     (*list)->next = new_back;
   }
   *list = new_back;
+}
+
+int list_length(const List *const list)
+{
+  if (list == 0) return 0;
+
+  int length = 1;
+  List *last = list->prev;
+  while (last != NULL)
+  {
+    last = last->prev;
+    length++;
+  }
+  return length;
+}
+
+void list_clear(List **list)
+{
+  while (!list_is_empty(*list))
+  {
+    void *item = list_pop_back(list);
+    free(item);
+  }
 }

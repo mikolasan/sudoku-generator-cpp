@@ -82,7 +82,7 @@ int listbits(int bits, int list[])
   return index;
 }
 
-void figurebits(int board[], int allowed[], int needed[])
+void figurebits(const int *const board, int allowed[], int needed[])
 {
   for (int i = 0; i < BOARD_SIZE; i++)
   {
@@ -135,7 +135,7 @@ void pickbetter(Guess **b, int *b_size, int *c, Guess *t, int t_size)
   }
 }
 
-void deduce(int board[], Guess **guesses, int *guess_size)
+int deduce(int board[], Guess **guesses, int *guess_size)
 {
   int allowed[81] = { 0 };
   int needed[27] = { 0 };
@@ -160,8 +160,7 @@ void deduce(int board[], Guess **guesses, int *guess_size)
         int list_size = listbits(allowed[pos], numbers);
         if (list_size == 0)
         {
-          // return [];
-          return;
+          return 1;
         }
         else if (list_size == 1)
         {
@@ -210,8 +209,7 @@ void deduce(int board[], Guess **guesses, int *guess_size)
 
           if (spotCount == 0)
           {
-            // return [];
-            return;
+            return 1;
           }
           else if (spotCount == 1)
           {
@@ -236,10 +234,12 @@ void deduce(int board[], Guess **guesses, int *guess_size)
       if (*guesses)
       {
         shuffle_guesses(*guesses, *guess_size);
+        return 1;
       }
-      return;
+      return 0;
     }
   }
+  return 0;
 }
 
 void solveboard(const int *const original, SolveNext *answer)
@@ -252,9 +252,8 @@ void solveboard(const int *const original, SolveNext *answer)
 
   Guess *guesses = NULL;
   int guess_size = 0;
-  deduce(board, &guesses, &guess_size);
-
-  if (guesses == NULL)
+  int guess_result = deduce(board, &guesses, &guess_size);
+  if (guess_result == 0)
   {
     answer->workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
     for (int i = 0; i < BOARD_SIZE; ++i)
@@ -280,7 +279,7 @@ void solveboard(const int *const original, SolveNext *answer)
   solvenext(track, answer);
 }
 
-void solvenext(List *remembered, SolveNext *next)
+void solvenext(const List *remembered, SolveNext *next)
 {
   int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
   next->workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
@@ -317,9 +316,8 @@ void solvenext(List *remembered, SolveNext *next)
 
     Guess *guesses = NULL;
     int guess_size = 0;
-    deduce(workspace, &guesses, &guess_size);
-
-    if (guesses == NULL)
+    int guess_result = deduce(workspace, &guesses, &guess_size);
+    if (guess_result == 0)
     {
       next->remembered = remembered;
       for (int i = 0; i < BOARD_SIZE; ++i)
@@ -392,7 +390,7 @@ void makepuzzle(int *input_board, int *output_board)
     deleted[i] = 1;
     int *tmp_board = (int *)malloc(BOARD_SIZE * sizeof(int));
     boardforentries(puzzle, puzzle_size, tmp_board);
-    int rating = -1; // TODO: checkpuzzle(tmp_board, input_board);
+    int rating = checkpuzzle(tmp_board, input_board);
     if (rating == -1)
     {
       deleted[i] = 0;
@@ -422,28 +420,128 @@ void boardforentries(Guess *entries, int entries_size, int *board)
 }
 
 // return rating
-// int checkpuzzle(int puzzle[], int board[])
-// {
-//   Guess tuple1[BOARD_SIZE];
-//   solveboard(puzzle, tuple1);
-//   if (tuple1[0].num == -1)
-//   {
-//     return -1;
-//   }
+int checkpuzzle(int puzzle[], int *board)
+{
+  SolveNext solution;
+  solveboard(puzzle, &solution);
+  List *state = solution.remembered;
+  int *answer = solution.workspace;
 
-//   if (board != NULL && !boardmatches(board, tuple1))
-//   {
-//     return -1;
-//   }
+  if (answer == NULL)
+  {
+    return -1;
+  }
 
-//   int difficulty = tuple1[0].count;
-//   Guess tuple2[BOARD_SIZE];
-//   solvenext(tuple1, tuple2);
+  if (board != NULL && boardmatches(board, answer))
+  {
+    return -1;
+  }
 
-//   if (tuple2[0].num != -1)
-//   {
-//     return -1;
-//   }
+  int difficulty = list_length(state);
+  SolveNext second;
+  second.workspace = NULL;
+  second.remembered = NULL;
+  solvenext(state, &second);
 
-//   return difficulty;
-// }
+  if (second.remembered != NULL)
+  {
+    return -1;
+  }
+
+  return difficulty;
+}
+
+int boardmatches(int board1[], int board2[])
+{
+  for (int i = 0; i < BOARD_SIZE; ++i)
+  {
+    if (board1[i] != board2[i]) return 0;
+  }
+  return 1;
+}
+
+void find_next_move(int *board, List **moves)
+{
+  int allowed[81] = { 0 };
+  int needed[27] = { 0 };
+  
+  figurebits(board, allowed, needed);
+ 
+  // fill in any spots determined by direct conflicts
+  for (int pos = 0; pos < BOARD_SIZE; pos++)
+  {
+    if (board[pos] == -1)
+    {
+      int numbers[9];
+      int list_size = listbits(allowed[pos], numbers);
+      if (list_size == 1)
+      {
+        NextMove *move = (NextMove *)malloc(sizeof(NextMove));
+        move->num = numbers[0];
+        move->pos = pos;
+        list_push_back(moves, (void *)move);
+      }
+    }
+  }
+
+  // fill in any spots determined by elimination of other locations
+  for (int axis = 0; axis < 3; axis++)
+  {
+    for (int x = 0; x < 9; x++)
+    {
+      int numbers[9];
+      int list_size = listbits(needed[axis * 9 + x], numbers);
+      for (int i = 0; i < list_size; i++)
+      {
+        int n = numbers[i];
+        int bit = 1 << n;
+        int spots[9];
+        int spotCount = 0;
+
+        for (int y = 0; y < 9; y++)
+        {
+          int pos = posfor(x, y, axis);
+          if (allowed[pos] & bit)
+          {
+            spots[spotCount++] = pos;
+          }
+        }
+
+        if (spotCount == 1)
+        {
+          NextMove *move = (NextMove *)malloc(sizeof(NextMove));
+          move->num = n;
+          move->pos = spots[0];
+          list_push_back(moves, (void *)move);
+        }
+      }
+    }
+  }
+}
+
+int puzzle_length(int *board)
+{
+  int length = 0;
+  for (int i = 0; i < BOARD_SIZE; ++i)
+  {
+    if (board[i] == -1)
+    {
+      length++;
+    }
+  }
+  return length;
+}
+
+int count_next_open_moves(int *board)
+{
+  List *moves = NULL;
+  find_next_move(board, &moves);
+  int length = list_length(moves);
+  list_clear(moves);
+  return length;
+}
+
+int count_next_closed_moves(int *board)
+{
+  return 0;
+}
