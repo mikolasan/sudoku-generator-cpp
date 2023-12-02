@@ -3,12 +3,15 @@
 
 #include "list.h"
 
+#define SQUARE_SIZE 3
+#define SIDE_SIZE 9
 #define BOARD_SIZE 81
 
 enum AXIS {
   VERTICAL,
   HORIZONTAL,
-  BLOCK
+  SQUARE,
+  N_AXIS,
 };
 
 typedef struct
@@ -59,5 +62,6 @@ int boardmatches(int board1[], int board2[]);
 void find_next_move(int *board, List **moves);
 int puzzle_length(int *board);
 int count_next_open_moves(int *board);
+int count_singles(int *board);
 
 #endif 

@@ -42,21 +42,21 @@ int posfor(int x, int y, int axis)
 {
   if (axis == VERTICAL)
   {
-    return x * 9 + y;
+    return x * SIDE_SIZE + y;
   }
   else if (axis == HORIZONTAL)
   {
-    return y * 9 + x;
+    return y * SIDE_SIZE + x;
   }
   // block
-  return 27 * (x / 3) + 3 * (x % 3) + 9 * (y / 3) + (y % 3);
+  return 27 * (x / SQUARE_SIZE) + SQUARE_SIZE * (x % SQUARE_SIZE) + SIDE_SIZE * (y / SQUARE_SIZE) + (y % SQUARE_SIZE);
 }
 
 // missing values from 0-8 on the specified axis
 int axismissing(int board[], int x, int axis)
 {
   int bits = 0;
-  for (int y = 0; y < 9; y++)
+  for (int y = 0; y < SIDE_SIZE; y++)
   {
     int pos = posfor(x, y, axis);
     int e = board[pos];
@@ -72,7 +72,7 @@ int axismissing(int board[], int x, int axis)
 int listbits(int bits, int list[])
 {
   int index = 0;
-  for (int y = 0; y < 9; y++)
+  for (int y = 0; y < SIDE_SIZE; y++)
   {
     if ((bits & (1 << y)) != 0)
     {
@@ -89,17 +89,31 @@ void figurebits(const int *const board, int allowed[], int needed[])
     allowed[i] = board[i] == -1 ? 511 : 0;
   }
 
-  for (int axis = 0; axis < 3; axis++)
+  for (int axis = 0; axis < N_AXIS; axis++)
   {
-    for (int x = 0; x < 9; x++)
+    for (int x = 0; x < SIDE_SIZE; x++)
     {
       int bits = axismissing(board, x, axis);
-      needed[axis * 9 + x] = bits;
-      for (int y = 0; y < 9; y++)
+      needed[axis * SIDE_SIZE + x] = bits;
+      for (int y = 0; y < SIDE_SIZE; y++)
       {
         int pos = posfor(x, y, axis);
         allowed[pos] &= bits;
       }
+    }
+  }
+}
+
+void available(const int *const board, int available[])
+{
+  for (int axis = 0; axis < N_AXIS; axis++)
+  {
+    for (int x = 0; x < SIDE_SIZE; x++)
+    {
+      int bits = axismissing(board, x, axis);
+      available[axis * SIDE_SIZE + x] = bits;
+      int numbers[SIDE_SIZE];
+      listbits(bits, numbers);
     }
   }
 }
@@ -137,7 +151,7 @@ void pickbetter(Guess **b, int *b_size, int *c, Guess *t, int t_size)
 
 int deduce(int board[], Guess **guesses, int *guess_size)
 {
-  int allowed[81] = { 0 };
+  int allowed[BOARD_SIZE] = { 0 };
   int needed[27] = { 0 };
 
   while (1)
@@ -156,7 +170,7 @@ int deduce(int board[], Guess **guesses, int *guess_size)
     {
       if (board[pos] == -1)
       {
-        int numbers[9];
+        int numbers[SIDE_SIZE];
         int list_size = listbits(allowed[pos], numbers);
         if (list_size == 0)
         {
@@ -185,20 +199,20 @@ int deduce(int board[], Guess **guesses, int *guess_size)
     }
 
     // fill in any spots determined by elimination of other locations
-    for (int axis = 0; axis < 3; axis++)
+    for (int axis = 0; axis < N_AXIS; axis++)
     {
-      for (int x = 0; x < 9; x++)
+      for (int x = 0; x < SIDE_SIZE; x++)
       {
-        int numbers[9];
-        int list_size = listbits(needed[axis * 9 + x], numbers);
+        int numbers[SIDE_SIZE];
+        int list_size = listbits(needed[axis * SIDE_SIZE + x], numbers);
         for (int i = 0; i < list_size; i++)
         {
           int n = numbers[i];
           int bit = 1 << n;
-          int spots[9];
+          int spots[SIDE_SIZE];
           int spotCount = 0;
 
-          for (int y = 0; y < 9; y++)
+          for (int y = 0; y < SIDE_SIZE; y++)
           {
             int pos = posfor(x, y, axis);
             if (allowed[pos] & bit)
@@ -279,8 +293,9 @@ void solveboard(const int *const original, SolveNext *answer)
   solvenext(track, answer);
 }
 
-void solvenext(const List *remembered, SolveNext *next)
+void solvenext(const List *state, SolveNext *next)
 {
+  List *remembered = state;
   int *workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
   next->workspace = (int *)malloc(BOARD_SIZE * sizeof(int));
 
@@ -462,7 +477,7 @@ int boardmatches(int board1[], int board2[])
 
 void find_next_move(int *board, List **moves)
 {
-  int allowed[81] = { 0 };
+  int allowed[BOARD_SIZE] = { 0 };
   int needed[27] = { 0 };
   
   figurebits(board, allowed, needed);
@@ -472,7 +487,7 @@ void find_next_move(int *board, List **moves)
   {
     if (board[pos] == -1)
     {
-      int numbers[9];
+      int numbers[SIDE_SIZE];
       int list_size = listbits(allowed[pos], numbers);
       if (list_size == 1)
       {
@@ -485,20 +500,20 @@ void find_next_move(int *board, List **moves)
   }
 
   // fill in any spots determined by elimination of other locations
-  for (int axis = 0; axis < 3; axis++)
+  for (int axis = 0; axis < N_AXIS; axis++)
   {
-    for (int x = 0; x < 9; x++)
+    for (int x = 0; x < SIDE_SIZE; x++)
     {
-      int numbers[9];
-      int list_size = listbits(needed[axis * 9 + x], numbers);
+      int numbers[SIDE_SIZE];
+      int list_size = listbits(needed[axis * SIDE_SIZE + x], numbers);
       for (int i = 0; i < list_size; i++)
       {
         int n = numbers[i];
         int bit = 1 << n;
-        int spots[9];
+        int spots[SIDE_SIZE];
         int spotCount = 0;
 
-        for (int y = 0; y < 9; y++)
+        for (int y = 0; y < SIDE_SIZE; y++)
         {
           int pos = posfor(x, y, axis);
           if (allowed[pos] & bit)
@@ -541,7 +556,37 @@ int count_next_open_moves(int *board)
   return length;
 }
 
-int count_next_closed_moves(int *board)
+int count_singles(int *board)
 {
-  return 0;
+  int available[27] = {0};
+    for (int axis = 0; axis < N_AXIS; axis++)
+    {
+        for (int x = 0; x < SIDE_SIZE; x++)
+        {
+            int bits = axismissing(board, x, axis);
+            available[axis * SIDE_SIZE + x] = bits;
+        }
+    }
+
+    int n_singles = 0;
+    for (int k = 0; k < BOARD_SIZE; ++k)
+    {
+        if (board[k] > -1) continue;
+
+        int x = k % SIDE_SIZE;
+        int y = k / SIDE_SIZE;
+        int block_x = x / SQUARE_SIZE;
+        int block_y = y / SQUARE_SIZE;
+        int row_id = y;
+        int column_id = SIDE_SIZE + x;
+        int block_id = 18 + block_y * SQUARE_SIZE + block_x;
+        int cross = available[row_id] & available[column_id] & available[block_id];
+        int numbers[SIDE_SIZE] = {0};
+        int size = listbits(cross, numbers);
+        if (size == 1)
+        {
+            n_singles++;
+        }
+    }
+    return n_singles;
 }

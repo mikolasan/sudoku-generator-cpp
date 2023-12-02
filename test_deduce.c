@@ -4,9 +4,9 @@
 #include "sudoku.h"
 
 void printBoard(int board[]) {
-    for (int i = 0; i < 9; ++i) {
-        for (int j = 0; j < 9; ++j) {
-            printf("%2d ", board[i * 9 + j]);
+    for (int i = 0; i < SIDE_SIZE; ++i) {
+        for (int j = 0; j < SIDE_SIZE; ++j) {
+            printf("%2d ", board[i * SIDE_SIZE + j]);
         }
         printf("\n");
     }

@@ -121,7 +121,7 @@ int main() {
     Guess *t5 = (Guess *)malloc(t_size5 * sizeof(Guess));
     for (int i = 0; i < t_size5; ++i) {
         t5[i].pos = i + 80;
-        t5[i].num = i + 81;
+        t5[i].num = i + BOARD_SIZE;
     }
 
     pickbetter(&b5, &b_size5, &c5, t5, t_size5);

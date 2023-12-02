@@ -10,7 +10,7 @@ void printBoard(int *board)
   for (int i = 0; i < BOARD_SIZE; ++i)
   {
     printf("%d ", board[i]);
-    if ((i + 1) % 9 == 0)
+    if ((i + 1) % SIDE_SIZE == 0)
     {
       printf("\n");
     }
